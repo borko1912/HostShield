@@ -35,7 +35,7 @@ Joomla, Drupal, PrestaShop, OpenCart, Magento или обикновен PHP) о�
 
 **Изисквания:** PHP 8.1+ с `zip`, `mysqli`, `curl` (стандартни на всеки хостинг). Cron задача всяка минута.
 
-1. **Изтегли** последния zip от [Releases](https://github.com/borko1912/hostshield/releases).
+1. **Изтегли** последния zip от [Releases](https://github.com/borko1912/HostShield/releases).
 2. **Създай поддомейн** за таблото, напр. `shield.example.com`, и **качи** съдържанието на zip-а в папката му
    (File Manager → Upload → Extract).
 3. **Отвори** `https://shield.example.com` — инсталаторът проверява сървъра, избира папка за данни извън публичната папка,

@@ -244,7 +244,7 @@ if ($due('last_audit', 3600 * max(1, (int)($cfg['monitor']['audit_hours'] ?? 24)
 
 // 7) New HostShield version (once a day).
 if ($due('last_update_check', 86400)) {
-    $rel = shield_update_available();
+    $rel = shield_update_available(true);
     if ($rel && ($state['update_notified'] ?? '') !== $rel['version']) {
         shield_state_update(static function (array $st) use ($rel): array {
             $st['update_notified'] = $rel['version'];

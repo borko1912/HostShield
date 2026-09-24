@@ -5,7 +5,7 @@
 <p align="center"><b>Firewall, backups and malware scanner for sites on shared hosting — no root, no Docker, no monthly fee.</b></p>
 
 <p align="center">
-  <a href="https://github.com/borko1912/hostshield/actions"><img src="https://github.com/borko1912/hostshield/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/borko1912/HostShield/actions"><img src="https://github.com/borko1912/HostShield/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="AGPL-3.0"></a>
   <img src="https://img.shields.io/badge/PHP-8.1%20%E2%80%93%208.4-777bb4" alt="PHP 8.1–8.4">
   <a href="https://github.com/sponsors/borko1912"><img src="https://img.shields.io/badge/sponsor-%E2%99%A5-ea4aaa" alt="Sponsor"></a>
@@ -38,14 +38,12 @@ It was built after the author's own sites were hacked again and again. It has be
 | ⚙️ **Zero-config setup** | Web installer finds the sites in your account and reads each app's database credentials from its own config. No config files to edit. |
 | 🌍 **English and Bulgarian** | Translations are one PHP file each — contributions welcome. |
 
-<!-- Screenshots: docs/screenshots/*.png -->
-<p align="center"><img src="docs/screenshots/overview.png" width="860" alt="HostShield overview"></p>
 
 ## Install (5 minutes)
 
 **Requirements:** PHP 8.1+ with `zip`, `mysqli`, `curl` (all standard on shared hosting). A cron job every minute.
 
-1. **Download** the latest release zip from [Releases](https://github.com/borko1912/hostshield/releases).
+1. **Download** the latest release zip from [Releases](https://github.com/borko1912/HostShield/releases).
 2. **Create a subdomain** for the dashboard, e.g. `shield.example.com`, and **upload** the zip contents into its folder
    (hosting File Manager → Upload → Extract).
 3. **Open** `https://shield.example.com` — the installer checks the server, picks a data folder outside the web root,

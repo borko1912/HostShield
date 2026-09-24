@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 const SHIELD_VERSION = '2.0.0';
-const SHIELD_REPO = 'borko1912/hostshield';
+const SHIELD_REPO = 'borko1912/HostShield';
 const SHIELD_FUNDING = ['GitHub Sponsors' => 'https://github.com/sponsors/borko1912'];
 
 require_once dirname(__DIR__) . '/waf/engine.php';

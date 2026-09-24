@@ -5,7 +5,7 @@ HostShield protects other people's sites, so vulnerabilities in it matter. Thank
 ## Reporting
 
 **Do not open a public issue.** Use GitHub's private reporting instead:
-*Security → Report a vulnerability* on https://github.com/borko1912/hostshield.
+*Security → Report a vulnerability* on https://github.com/borko1912/HostShield.
 
 Please include the version, how to reproduce it, and the impact. You will get an answer within 7 days.
 Fixes are released as soon as possible, and reporters are credited in the changelog unless they prefer not to be.

@@ -23,8 +23,9 @@ function shield_update_check(bool $force = false): array
     return $release;
 }
 
-function shield_update_available(): ?array
+/** Newer release than this one, or null. The dashboard only reads the cache; the worker refreshes it. */
+function shield_update_available(bool $fetch = false): ?array
 {
-    $r = shield_update_check();
+    $r = $fetch ? shield_update_check() : (array)(shield_json_read(shield_path('cache/update.json'))['release'] ?? []);
     return $r && version_compare($r['version'], SHIELD_VERSION, '>') ? $r : null;
 }
