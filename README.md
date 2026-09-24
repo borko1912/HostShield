@@ -116,6 +116,13 @@ roadmap below. A ⭐ helps others find it, too.
 **Roadmap:** one dashboard for several hosting accounts · encrypted off-site backups · country blocking · 2FA for
 WordPress logins · one-click updates · more languages.
 
+## Custom work and support
+
+Need a feature for your business, help installing HostShield, or a hacked site cleaned up?
+**[Open a custom work request](https://github.com/borko1912/HostShield/issues/new?template=custom_work.yml)** and get a quote.
+Paid requests are scheduled first; features useful to everyone are released for all users.
+Monthly [sponsors](https://github.com/sponsors/borko1912) get priority support.
+
 ## Contributing
 
 Bug reports, false positives and translations are very welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).

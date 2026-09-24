@@ -1,0 +1,30 @@
+name: Custom work / paid request
+description: Hire the maintainer for a feature, an installation, or cleaning up a hacked site
+title: "[Custom work] "
+labels: [paid-request]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you! Describe what you need and you will get a quote, usually within 2 working days.
+        Paid requests are scheduled before free feature requests. Features that are useful to everyone
+        are released as open source for all users.
+  - type: dropdown
+    attributes:
+      label: Type of work
+      options:
+        - New feature or integration
+        - Installation and setup on my hosting
+        - Clean up a hacked site
+        - Priority support / bug fix
+        - Other
+    validations: {required: true}
+  - type: textarea
+    attributes: {label: What do you need?, description: "The more detail, the better the quote."}
+    validations: {required: true}
+  - type: input
+    attributes: {label: Budget (optional), placeholder: "e.g. 100 EUR"}
+  - type: input
+    attributes: {label: Deadline (optional), placeholder: "e.g. end of next month"}
+  - type: textarea
+    attributes: {label: Hosting and sites, description: "Panel, PHP version, platforms (WordPress, Laravel...). Do NOT post passwords here."}

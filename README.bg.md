@@ -53,6 +53,12 @@ Joomla, Drupal, PrestaShop, OpenCart, Magento или обикновен PHP) о�
 HostShield е безплатен и с отворен код. Ако ти е спасил сайта — или уикенда — помисли за
 **[спонсорство в GitHub](https://github.com/sponsors/borko1912)**. Една ⭐ също помага.
 
+## Поръчки и поддръжка
+
+Нужна ти е функция за бизнеса, помощ с инсталирането или почистване на хакнат сайт?
+**[Пусни заявка за поръчка](https://github.com/borko1912/HostShield/issues/new?template=custom_work.yml)** и ще получиш оферта.
+Платените заявки се правят с приоритет. Месечните [спонсори](https://github.com/sponsors/borko1912) получават приоритетна поддръжка.
+
 ## Лиценз
 
 [AGPL-3.0](LICENSE).
