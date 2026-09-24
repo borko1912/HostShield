@@ -1,0 +1,7 @@
+/config.php
+/install.unlock
+/vendor/
+/.phpunit.cache/
+error_log
+*.log
+/dist/
