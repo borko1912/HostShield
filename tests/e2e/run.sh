@@ -51,12 +51,16 @@ sleep 2
 echo "== Web installer"
 TOKEN="$(csrf "$BASE/hostshield/")"
 check "installer page has a form" test -n "$TOKEN"
-curl -s -o /dev/null -b "$JAR" -c "$JAR" "$BASE/hostshield/" \
+curl -s -o /tmp/hs-install.html -b "$JAR" -c "$JAR" "$BASE/hostshield/" \
     --data-urlencode "csrf=$TOKEN" --data-urlencode "data_dir=/var/www/hostshield-data" \
     --data-urlencode "user=admin" --data-urlencode "email=admin@example.com" \
     --data-urlencode "password=e2e-shield-password" --data-urlencode "password2=e2e-shield-password" \
     --data-urlencode "language=en" --data-urlencode "timezone=Europe/Sofia" --data-urlencode "paths[]=/var/www/html"
 check "config.php written" web 'test -f /var/www/hostshield/config.php'
+if ! web 'test -f /var/www/hostshield/config.php'; then
+    echo "--- installer response:"; grep -o 'class="alert[^<]*<[^<]*' /tmp/hs-install.html; head -c 400 /tmp/hs-install.html; echo
+    web 'ls -la /var/www/hostshield | head; ls -la /var/www'
+fi
 check "settings.php written" web 'test -f /var/www/hostshield-data/settings.php'
 check "logged in after install" bash -c "curl -s -b '$JAR' '$BASE/hostshield/' | grep -q 'Setup checklist'"
 check "site discovered" bash -c "curl -s -b '$JAR' '$BASE/hostshield/' | grep -q 'WordPress'"
