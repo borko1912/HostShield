@@ -16,7 +16,7 @@ const SHIELD_EVENTS = [
     'restore' => 'Restore finished',
     'audit' => 'New security audit problems',
     'ssl' => 'SSL certificate expiring',
-    'update' => 'New Shield version',
+    'update' => 'New HostShield version',
 ];
 
 /** Sends an alert. Returns the list of channels that accepted it. */

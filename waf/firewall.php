@@ -10,11 +10,11 @@
     define('SHIELD_WAF_LOADED', true);
 
     try {
-        $root = dirname(__DIR__);
-        if (!is_file($root . '/config.php')) {
+        $configFile = (string)(getenv('SHIELD_CONFIG') ?: dirname(__DIR__) . '/config.php');
+        if (!is_file($configFile)) {
             return;
         }
-        $boot = (array)(require $root . '/config.php');
+        $boot = (array)(require $configFile);
         $data = rtrim((string)($boot['data_dir'] ?? ''), '/\\');
         if ($data === '') {
             return;

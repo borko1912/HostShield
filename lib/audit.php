@@ -142,7 +142,7 @@ function shield_audit_site(string $siteKey, bool $notify = true): array
     // World-writable code files.
     $baseline = shield_json_read(shield_path('integrity/' . $siteKey . '.baseline.json'));
     $writable = [];
-    foreach (array_slice(array_keys((array)($baseline['files'] ?? [])), 0, 20000) as $rel) {
+    foreach (PHP_OS_FAMILY === 'Windows' ? [] : array_slice(array_keys((array)($baseline['files'] ?? [])), 0, 20000) as $rel) {
         $p = @fileperms($site['path'] . '/' . $rel);
         if ($p !== false && ($p & 0x0002)) {
             $writable[] = $rel;

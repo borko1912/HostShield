@@ -1,0 +1,12 @@
+name: False positive
+description: The firewall or the scanner flagged something legitimate
+labels: [false-positive]
+body:
+  - type: input
+    attributes: {label: Rule id, placeholder: "xss_script"}
+    validations: {required: true}
+  - type: input
+    attributes: {label: Platform and plugin/app, placeholder: "WordPress 6.6, Elementor 3.24 editor"}
+    validations: {required: true}
+  - type: textarea
+    attributes: {label: Request, description: "Path and the parameter that matched (the event shows it). Remove personal data.", render: text}

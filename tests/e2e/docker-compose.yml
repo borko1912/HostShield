@@ -1,0 +1,37 @@
+# End-to-end test environment: WordPress (Apache + mod_php), MariaDB and MinIO (S3).
+# Run with: bash tests/e2e/run.sh
+name: hostshield-e2e
+
+services:
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: wp
+      MARIADB_USER: wp
+      MARIADB_PASSWORD: wp-password
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 3s
+      retries: 40
+
+  minio:
+    image: minio/minio:latest
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: hostshield
+      MINIO_ROOT_PASSWORD: hostshield-secret
+
+  web:
+    image: wordpress:php8.2-apache
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wp
+      WORDPRESS_DB_PASSWORD: wp-password
+      WORDPRESS_DB_NAME: wp
+      SHIELD_HOME: /var/www
+    ports:
+      - "127.0.0.1:8090:80"

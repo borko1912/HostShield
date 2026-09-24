@@ -17,7 +17,18 @@ function shield_db_connect(array $site, ?string $database = null): mysqli
         throw new RuntimeException(__('No database user set for this site. Add it in the site settings.'));
     }
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    $db = new mysqli((string)($c['host'] ?? 'localhost'), (string)$c['user'], (string)($c['pass'] ?? ''), (string)($database ?? ''), (int)($c['port'] ?? 3306) ?: 3306);
+    try {
+        $db = new mysqli((string)($c['host'] ?? 'localhost'), (string)$c['user'], (string)($c['pass'] ?? ''), (string)($database ?? ''), (int)($c['port'] ?? 3306) ?: 3306);
+    } catch (mysqli_sql_exception $e) {
+        $hint = match ((int)$e->getCode()) {
+            1045 => __('wrong user or password — check the site settings'),
+            1044, 1049 => __('the user has no access to this database, or it does not exist'),
+            2002, 2003, 2005 => __('the database server does not answer — check the host'),
+            default => '',
+        };
+        throw new mysqli_sql_exception(__('Database %s (%s@%s): %s', (string)($database ?? '-'), (string)$c['user'], (string)($c['host'] ?? 'localhost'),
+            $e->getMessage() . ($hint !== '' ? ' → ' . $hint : '')), (int)$e->getCode(), $e);
+    }
     $db->set_charset('utf8mb4');
     $db->query("SET SESSION sql_mode = 'NO_AUTO_VALUE_ON_ZERO'");
     return $db;

@@ -1,0 +1,14 @@
+name: Bug report
+description: Something does not work as described
+labels: [bug]
+body:
+  - type: textarea
+    attributes: {label: What happened, description: "What did you do, what did you expect, what happened instead?"}
+    validations: {required: true}
+  - type: input
+    attributes: {label: HostShield version, placeholder: "2.0.0"}
+    validations: {required: true}
+  - type: input
+    attributes: {label: Hosting, description: "Panel, PHP version and how PHP runs (FPM, LiteSpeed, mod_php)", placeholder: "cPanel, PHP 8.2 FPM"}
+  - type: textarea
+    attributes: {label: Log lines, description: "From the task page or data folder logs/. Remove passwords and personal data.", render: text}

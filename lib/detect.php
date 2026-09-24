@@ -48,7 +48,10 @@ function shield_platform_upload_dirs(string $platform, string $path): array
         'magento' => ['pub/media'],
         default => ['uploads', 'upload', 'files', 'images'],
     };
-    return array_values(array_filter($dirs, static fn($d) => is_dir(rtrim($path, '/') . '/' . $d)));
+    // Platform folders are kept even before the first upload creates them; the generic guesses only if they exist.
+    return $platform === 'php' || $platform === 'static'
+        ? array_values(array_filter($dirs, static fn($d) => is_dir(rtrim($path, '/') . '/' . $d)))
+        : $dirs;
 }
 
 /** Default backup exclusions per platform (caches and logs). */
@@ -231,20 +234,25 @@ function shield_discover_sites(?string $home = null): array
         if ($domain === '' && basename($real) === 'public_html') {
             $domain = shield_guess_main_domain($home);
         }
-        $out[] = [
-            'path' => shield_app_root($real, $platform),
-            'domain' => $domain,
+        $app = shield_app_root($real, $platform);
+        if (isset($out[$app]) && ($out[$app]['domain'] !== '' || $domain === '')) {
+            continue; // same app found through its docroot and its public/ folder
+        }
+        $out[$app] = [
+            'path' => $app,
+            'domain' => $domain !== '' ? $domain : ($out[$app]['domain'] ?? ''),
             'platform' => $platform,
             'db' => shield_detect_db($real, $platform),
         ];
     }
+    $out = array_values($out);
     usort($out, static fn($a, $b) => strcmp($a['domain'] ?: $a['path'], $b['domain'] ?: $b['path']));
     return $out;
 }
 
 function shield_guess_home(): string
 {
-    $candidates = [getenv('HOME') ?: '', $_SERVER['HOME'] ?? ''];
+    $candidates = [getenv('SHIELD_HOME') ?: '', getenv('HOME') ?: '', $_SERVER['HOME'] ?? ''];
     if (function_exists('posix_getpwuid') && function_exists('posix_geteuid')) {
         $candidates[] = (string)(posix_getpwuid(posix_geteuid())['dir'] ?? '');
     }
