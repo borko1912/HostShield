@@ -15,7 +15,7 @@ No build step and no runtime dependencies. PHP 8.1+ is all you need.
 
 ```bash
 php tests/run.php          # unit tests
-bash tests/e2e/run.sh      # end-to-end test: WordPress + MariaDB + MinIO in Docker
+bash tests/e2e/run.sh      # end-to-end test: WordPress + MariaDB + S3 in Docker
 php -S 127.0.0.1:8088      # dashboard at http://127.0.0.1:8088 (the installer runs on first visit)
 ```
 

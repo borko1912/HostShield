@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # HostShield end-to-end test.
-# Starts WordPress + MariaDB + MinIO in Docker, installs HostShield through its web installer
+# Starts WordPress + MariaDB + S3 in Docker, installs HostShield through its web installer
 # and checks backup, restore, firewall, scanner, quarantine, off-site storage and audit.
 #
 #   bash tests/e2e/run.sh          # run and tear down
@@ -113,10 +113,10 @@ check "dropped file removed" web '! test -f /var/www/html/e2e-dropped.php'
 check "safety backup taken" web 'ls /var/www/hostshield-data/backups/html | grep -q pre-restore'
 check "site works after restore" test "$(code "$BASE/")" = "200"
 
-echo "== Off-site storage (MinIO)"
+echo "== Off-site storage (S3)"
 shield_php 'require "lib/core.php"; require "lib/offsite.php";
   $s = shield_settings();
-  $s["backup"]["offsite"] = ["type" => "s3", "s3" => ["endpoint" => "http://minio:9000", "region" => "us-east-1", "bucket" => "shield", "key" => "hostshield", "secret" => "hostshield-secret", "prefix" => "e2e/", "path_style" => true], "ftp" => $s["backup"]["offsite"]["ftp"]];
+  $s["backup"]["offsite"] = ["type" => "s3", "s3" => ["endpoint" => "http://s3:9000", "region" => "us-east-1", "bucket" => "shield", "key" => "hostshield", "secret" => "hostshield-secret", "prefix" => "e2e/", "path_style" => true], "ftp" => $s["backup"]["offsite"]["ftp"]];
   shield_settings_save($s);
   $r = shield_s3_request("PUT", "", []); echo "bucket:" . $r["code"], "\n";
   echo shield_offsite_test(shield_config()["backup"]["offsite"]), "\n";' > /tmp/hs-s3 2>&1

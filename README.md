@@ -123,7 +123,7 @@ Security issues: please report privately, see [SECURITY.md](SECURITY.md).
 
 ```bash
 php tests/run.php            # unit tests (no dependencies)
-bash tests/e2e/run.sh        # full end-to-end test in Docker: WordPress, MariaDB, MinIO
+bash tests/e2e/run.sh        # full end-to-end test in Docker: WordPress, MariaDB, S3
 ```
 
 ## License

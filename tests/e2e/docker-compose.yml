@@ -1,4 +1,4 @@
-# End-to-end test environment: WordPress (Apache + mod_php), MariaDB and MinIO (S3).
+# End-to-end test environment: WordPress (Apache + mod_php), MariaDB and an S3-compatible server.
 # Run with: bash tests/e2e/run.sh
 name: hostshield-e2e
 
@@ -15,12 +15,10 @@ services:
       interval: 3s
       retries: 40
 
-  minio:
-    image: minio/minio:latest
-    command: server /data
-    environment:
-      MINIO_ROOT_USER: hostshield
-      MINIO_ROOT_PASSWORD: hostshield-secret
+  s3:
+    # S3-compatible server that checks AWS Signature V4 like the real service.
+    image: versity/versitygw:latest
+    command: ["--access", "hostshield", "--secret", "hostshield-secret", "--port", ":9000", "posix", "/tmp"]
 
   web:
     image: wordpress:php8.2-apache
