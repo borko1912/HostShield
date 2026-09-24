@@ -29,6 +29,7 @@ header('Cache-Control: no-store');
 $p = (string)($_GET['p'] ?? 'home');
 
 if (!shield_installed()) {
+    shield_session_start(); // before any output: hosts without output buffering cannot send the cookie later
     require __DIR__ . '/app/install.php';
     exit;
 }
@@ -72,6 +73,8 @@ if ($p === 'relay-mail' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $ok = shield_mail_send((string)$cfg['notify']['email'], (string)base64_decode((string)($_POST['s'] ?? '')), (string)base64_decode((string)($_POST['b'] ?? '')));
     exit($ok ? 'OK' : 'FAIL');
 }
+
+shield_session_start();
 
 $allowed = (array)($cfg['admin_allowed_ips'] ?? []);
 if ($allowed && !shield_ip_in_list(shield_client_ip(), $allowed)) {
