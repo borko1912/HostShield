@@ -18,7 +18,7 @@ FAIL=0
 dc() { docker compose -f docker-compose.yml "$@"; }
 web() { dc exec -T web bash -c "$1"; }
 www() { dc exec -T -u www-data web bash -c "$1"; }
-shield_php() { www "cd /var/www/hostshield && php -r '$1'"; }
+shield_php() { www "cd /var/www/hostshield && php -r '$1'"; local rc=$?; sleep 3; return $rc; } # opcache revalidates every 2 s
 check() { # check "name" <command...>
     local name="$1"; shift
     if "$@" >/dev/null 2>&1; then PASS=$((PASS + 1)); echo "  ✓ $name"; else FAIL=$((FAIL + 1)); echo "  ✗ $name"; fi
@@ -73,7 +73,7 @@ check "site key is html" test "$SITE" = "html"
 echo "== First cron run (baseline, uptime, audit)"
 www 'php /var/www/hostshield/cron/worker.php' >/dev/null 2>&1
 check "integrity baseline" web 'test -f /var/www/hostshield-data/integrity/html.baseline.json'
-check "uptime recorded" bash -c "dc exec -T web cat /var/www/hostshield-data/uptime/html.json | grep -q '\"code\": 200'"
+check "uptime recorded" bash -c "dc exec -T web cat /var/www/hostshield-data/uptime/html.json | grep -q '\"code\": 200'" || web 'head -c 400 /var/www/hostshield-data/uptime/html.json; echo' 
 check "audit stored" web 'test -f /var/www/hostshield-data/audit/html.json'
 
 echo "== Firewall"
@@ -83,6 +83,8 @@ check "firewall line added to .htaccess (mod_php)" web 'grep -q "php_value auto_
 check "site still works with the firewall" test "$(code "$BASE/")" = "200"
 check "heartbeat seen" web 'test -f /var/www/hostshield-data/waf/heartbeat/html'
 code "$BASE/?author=1" >/dev/null
+web 'ls -la /var/www/hostshield-data/logs /var/www/hostshield-data/waf; head -5 /var/www/html/.htaccess; grep -n "platform\|wp_block_user_enum\|mode" /var/www/hostshield-data/settings.php | head' 
+dc logs web 2>&1 | grep -i -E 'hostshield|shield' | tail -5
 check "log mode: user enumeration logged, not blocked" bash -c "dc exec -T web sh -c 'cat /var/www/hostshield-data/logs/waf-*.jsonl' | grep -q wp_user_enum"
 shield_php 'require "lib/core.php"; $s = shield_settings(); $s["waf"]["mode"] = "block"; shield_settings_save($s);'
 check "block mode: user enumeration blocked" test "$(code "$BASE/?author=1")" = "403"
@@ -112,6 +114,8 @@ dc exec -T db mariadb -uwp -pwp-password wp -e "UPDATE wp_options SET option_val
 web 'printf "<?php // dropped by the test\n" > /var/www/html/e2e-dropped.php && chown www-data /var/www/html/e2e-dropped.php'
 www "php /var/www/hostshield/cron/worker.php --restore html $BK all" > /tmp/hs-restore 2>&1
 check "restore finished" grep -q 'Done.' /tmp/hs-restore
+cat /tmp/hs-restore | tail -8
+dc exec -T db mariadb -N -uwp -pwp-password wp -e "SELECT option_value FROM wp_options WHERE option_name='blogname'"
 check "database content restored" bash -c "dc exec -T db mariadb -N -uwp -pwp-password wp -e \"SELECT option_value FROM wp_options WHERE option_name='blogname'\" | grep -q 'HostShield E2E'"
 check "dropped file removed" web '! test -f /var/www/html/e2e-dropped.php'
 check "safety backup taken" web 'ls /var/www/hostshield-data/backups/html | grep -q pre-restore'
