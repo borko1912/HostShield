@@ -445,7 +445,13 @@ switch ($a) {
         go('p=settings&tab=notifications');
     case 'update_check':
         $r = shield_update_check(true);
-        flash($r ? __('Latest release: %s', $r['version']) : __('Could not reach GitHub.'), $r ? 'ok' : 'warn');
+        $status = shield_update_status();
+        flash(match (true) {
+            (bool)$r => __('Latest release: %s', $r['version']),
+            $status === 'disabled' => __('Update checks are turned off in Settings.'),
+            $status === 'none' => __('No release has been published on GitHub yet.'),
+            default => __('Could not reach GitHub.'),
+        }, $r ? 'ok' : 'warn');
         go('p=about');
 
     // ---------------------------------------------------------------- account

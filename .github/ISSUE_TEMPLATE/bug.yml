@@ -6,7 +6,7 @@ body:
     attributes: {label: What happened, description: "What did you do, what did you expect, what happened instead?"}
     validations: {required: true}
   - type: input
-    attributes: {label: HostShield version, placeholder: "2.0.0"}
+    attributes: {label: HostShield version, placeholder: "2.0.1"}
     validations: {required: true}
   - type: input
     attributes: {label: Hosting, description: "Panel, PHP version and how PHP runs (FPM, LiteSpeed, mod_php)", placeholder: "cPanel, PHP 8.2 FPM"}

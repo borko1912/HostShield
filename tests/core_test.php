@@ -139,3 +139,25 @@ test('recovery codes: single use', function (): void {
     ok(!shield_recovery_code_use($admin, $codes[3]), 'used once');
     eq(9, count($admin['recovery']));
 });
+
+test('internal key: only for our own sites and dashboard, stable', function (): void {
+    $s = shield_settings();
+    $s['sites']['own'] = ['path' => '/tmp/own', 'title' => 'Own', 'url' => 'https://own.example', 'hosts' => ['own.example', 'www.own.example']];
+    shield_settings_save($s);
+    $k = shield_internal_key_for('https://own.example/.env');
+    ok(is_string($k) && strlen($k) >= 32, 'own site gets the key');
+    eq($k, shield_internal_key_for('https://WWW.own.example/'), 'alias host, same key');
+    eq(null, shield_internal_key_for('https://api.github.com/repos/x'), 'never to other hosts');
+    eq(null, shield_internal_key_for('not a url'), 'no host');
+    ok(is_file(shield_path('waf/internal.key')), 'stored in data_dir/waf for the firewall');
+    unset($s['sites']['own']);
+    shield_settings_save($s);
+});
+
+test('url resolve: Location headers', function (): void {
+    eq('https://a.example/login.php', shield_url_resolve('https://a.example/', '/login.php'));
+    eq('https://b.example/x', shield_url_resolve('https://a.example/', 'https://b.example/x'));
+    eq('https://c.example/y', shield_url_resolve('https://a.example/', '//c.example/y'));
+    eq('https://a.example/dir/next.php', shield_url_resolve('https://a.example/dir/page.php?q=1', 'next.php'));
+    eq('http://a.example:8080/z', shield_url_resolve('http://a.example:8080/q', '/z'));
+});

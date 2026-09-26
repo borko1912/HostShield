@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-const SHIELD_VERSION = '2.0.0';
+const SHIELD_VERSION = '2.0.1';
 const SHIELD_REPO = 'borko1912/HostShield';
 const SHIELD_FUNDING = ['GitHub Sponsors' => 'https://github.com/sponsors/borko1912'];
 
@@ -453,11 +453,103 @@ function shield_auto_excludes(string $root): array
 }
 
 /**
+ * Secret that marks HostShield's own requests to the protected sites (uptime
+ * monitor, security audit, mail relay). The firewall still applies its rules to
+ * them, but never counts strikes, bans, rate-limits or logs them as attacks —
+ * otherwise the audit's probes for /.env, /.git … got the server's own IP
+ * banned and every uptime check afterwards failed with 403.
+ * Deliberately a secret and not "trust the server IP": on shared hosting other
+ * tenants send requests from that same IP.
+ */
+function shield_internal_key(): string
+{
+    $f = shield_path('waf/internal.key');
+    $k = is_file($f) ? trim((string)@file_get_contents($f)) : '';
+    if (strlen($k) < 32) {
+        shield_dir('waf');
+        $k = bin2hex(random_bytes(24));
+        file_put_contents($f, $k, LOCK_EX);
+        @chmod($f, 0600);
+    }
+    return $k;
+}
+
+/** The internal key when $url points to one of our own sites or the dashboard, else null (never leak it elsewhere). */
+function shield_internal_key_for(string $url): ?string
+{
+    $host = strtolower((string)parse_url($url, PHP_URL_HOST));
+    if ($host === '') {
+        return null;
+    }
+    try {
+        $own = [];
+        foreach (shield_sites() as $s) {
+            foreach ((array)($s['hosts'] ?? []) as $h) {
+                $own[] = strtolower((string)$h);
+            }
+            $own[] = strtolower((string)parse_url((string)($s['url'] ?? ''), PHP_URL_HOST));
+        }
+        $own[] = strtolower((string)parse_url(shield_dashboard_url(), PHP_URL_HOST));
+        return in_array($host, array_filter($own), true) ? shield_internal_key() : null;
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
+/** Resolves a Location header against the URL it came from. */
+function shield_url_resolve(string $base, string $loc): string
+{
+    if (preg_match('#^https?://#i', $loc)) {
+        return $loc;
+    }
+    $p = parse_url($base);
+    $scheme = (string)($p['scheme'] ?? 'https');
+    if (str_starts_with($loc, '//')) {
+        return $scheme . ':' . $loc;
+    }
+    $origin = $scheme . '://' . ($p['host'] ?? '') . (isset($p['port']) ? ':' . $p['port'] : '');
+    if (str_starts_with($loc, '/')) {
+        return $origin . $loc;
+    }
+    $path = (string)($p['path'] ?? '/');
+    $dir = substr($path, 0, (int)strrpos($path, '/') + 1);
+    return $origin . ($dir !== '' ? $dir : '/') . $loc;
+}
+
+/**
  * Small HTTP client.
  * Options: method, headers (list), body, timeout, follow, range, sink (file path), infile (file path to upload), nobody.
  * Returns ['code', 'headers' (lowercase name => value), 'body', 'error', 'ms', 'url'].
+ *
+ * Requests to our own sites carry the internal key; their redirects are then
+ * followed by hand so the key is never sent to another host (curl repeats
+ * custom headers on a cross-host redirect).
  */
 function shield_http(string $url, array $o = []): array
+{
+    $key = shield_internal_key_for($url);
+    if ($key === null) {
+        return shield_http_raw($url, $o);
+    }
+    $follow = (bool)($o['follow'] ?? true);
+    $plain = $o;
+    $o['follow'] = false;
+    $o['headers'] = array_merge((array)($o['headers'] ?? []), ['X-HostShield-Internal: ' . $key]);
+    for ($i = 0; ; $i++) {
+        $r = shield_http_raw($url, $o);
+        $loc = (string)($r['headers']['location'] ?? '');
+        if (!$follow || $i >= 5 || $r['code'] < 300 || $r['code'] >= 400 || $loc === '') {
+            return $r;
+        }
+        $url = shield_url_resolve($url, $loc);
+        if (shield_internal_key_for($url) === null) {
+            return shield_http_raw($url, $plain); // left our sites: continue without the key
+        }
+    }
+}
+
+/** shield_http() without the internal key handling. */
+function shield_http_raw(string $url, array $o = []): array
 {
     if (!function_exists('curl_init')) {
         return ['code' => 0, 'headers' => [], 'body' => '', 'error' => 'PHP curl extension missing', 'ms' => 0, 'url' => $url];

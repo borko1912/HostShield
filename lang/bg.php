@@ -46,6 +46,8 @@ return array (
   'No channel accepted the message. Check the settings and the log.' => 'Нито един канал не прие съобщението. Провери настройките и лога.',
   'Latest release: %s' => 'Последна версия: %s',
   'Could not reach GitHub.' => 'Няма връзка с GitHub.',
+  'Update checks are turned off in Settings.' => 'Проверката за нова версия е изключена в Настройки.',
+  'No release has been published on GitHub yet.' => 'В GitHub все още няма публикувана версия.',
   'Two-factor authentication is on. Save the recovery codes below.' => 'Двуфакторната защита е включена. Запази кодовете за възстановяване по-долу.',
   'Wrong code. Try again.' => 'Грешен код. Опитай пак.',
   'Two-factor authentication is off.' => 'Двуфакторната защита е изключена.',

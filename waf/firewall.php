@@ -89,6 +89,15 @@
         $path = strtolower(rawurldecode((string)parse_url($uri, PHP_URL_PATH)));
         $ua = (string)($_SERVER['HTTP_USER_AGENT'] ?? '');
 
+        // --- HostShield's own requests (uptime monitor, security audit) ---
+        // Rules still apply, but no strikes, bans, rate limits or attack log:
+        // the audit probes /.env, /.git … on purpose. See shield_internal_key().
+        $internal = false;
+        $ik = (string)($_SERVER['HTTP_X_HOSTSHIELD_INTERNAL'] ?? '');
+        if ($ik !== '' && is_file($dir . '/internal.key')) {
+            $internal = hash_equals(trim((string)@file_get_contents($dir . '/internal.key')), $ik);
+        }
+
         // --- optional "Protected by" badge ---
         $banner = (array)($cfg['banner'] ?? []);
         $bShow = (string)($banner['show'] ?? 'session');
@@ -163,14 +172,14 @@
 
         // --- active ban / block list ---
         $banFile = $dir . '/bans/' . $ipKey . '.json';
-        if (is_file($banFile)) {
+        if (!$internal && is_file($banFile)) {
             $ban = (array)json_decode((string)@file_get_contents($banFile), true);
             if ((int)($ban['until'] ?? 0) > $now) {
                 $deny('BAN', 403);
             }
             @unlink($banFile);
         }
-        if (shield_ip_in_list($ip, array_merge((array)($waf['block_ips'] ?? []), (array)($waf['block'] ?? [])))) {
+        if (!$internal && shield_ip_in_list($ip, array_merge((array)($waf['block_ips'] ?? []), (array)($waf['block'] ?? [])))) {
             $deny($log('blocked', ['blocklist' => $ip]));
         }
 
@@ -241,10 +250,10 @@
         }
 
         $limit = (int)($waf['rate_limit_per_min'] ?? 600);
-        if ($limit > 0 && !isset($disabled['rate_limit']) && $bump('r' . $ipKey, 60) > $limit) {
+        if (!$internal && $limit > 0 && !isset($disabled['rate_limit']) && $bump('r' . $ipKey, 60) > $limit) {
             $hits['rate_limit'] = $limit . '/min';
         }
-        if ($res['is_login'] && !isset($disabled['login_bruteforce'])) {
+        if (!$internal && $res['is_login'] && !isset($disabled['login_bruteforce'])) {
             $lw = (int)($waf['login_window'] ?? 600);
             $ll = (int)($waf['login_limit'] ?? 10);
             if ($bump('l' . $ipKey, $lw) > $ll) {
@@ -253,6 +262,13 @@
         }
 
         if (!$hits) {
+            return;
+        }
+        if ($internal) {
+            // The audit needs the real answer (403 = file protected), nothing else.
+            if ($mode === 'block') {
+                $deny('INTERNAL', 403);
+            }
             return;
         }
         if ($mode !== 'block') {
