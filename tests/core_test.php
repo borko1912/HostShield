@@ -164,7 +164,10 @@ test('url resolve: Location headers', function (): void {
 
 test('notify: daily cap for non-critical alerts', function (): void {
     require_once dirname(__DIR__) . '/lib/notify.php';
-    @unlink(shield_path('cache/notify-quota.json'));
+    $qf = shield_path('cache/notify-quota.json');
+    if (is_file($qf)) {
+        unlink($qf);
+    }
     eq(true, shield_notify_quota('ban', 0), 'no limit');
     eq(true, shield_notify_quota('ban', 2), '1st');
     eq(true, shield_notify_quota('changes', 2), '2nd');
