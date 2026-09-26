@@ -161,3 +161,17 @@ test('url resolve: Location headers', function (): void {
     eq('https://a.example/dir/next.php', shield_url_resolve('https://a.example/dir/page.php?q=1', 'next.php'));
     eq('http://a.example:8080/z', shield_url_resolve('http://a.example:8080/q', '/z'));
 });
+
+test('notify: daily cap for non-critical alerts', function (): void {
+    require_once dirname(__DIR__) . '/lib/notify.php';
+    @unlink(shield_path('cache/notify-quota.json'));
+    eq(true, shield_notify_quota('ban', 0), 'no limit');
+    eq(true, shield_notify_quota('ban', 2), '1st');
+    eq(true, shield_notify_quota('changes', 2), '2nd');
+    eq('capped', shield_notify_quota('login', 2), 'first over the cap: one "limit reached" notice');
+    eq(false, shield_notify_quota('ban', 2), 'then silent');
+    eq(true, shield_notify_quota('down', 2), 'critical always goes out');
+    eq(true, shield_notify_quota('malware', 2), 'critical always goes out');
+    eq(0, SHIELD_BAN_DIGEST['off']);
+    eq(86400, SHIELD_BAN_DIGEST['daily']);
+});

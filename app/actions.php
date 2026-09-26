@@ -405,6 +405,9 @@ switch ($a) {
             case 'notifications':
                 $n = &$s['notify'];
                 $n['email'] = implode(', ', array_filter(lines($in['email'] ?? ''), static fn($x) => filter_var($x, FILTER_VALIDATE_EMAIL)));
+                $n['email_enabled'] = !empty($in['email_enabled']);
+                $n['ban_digest'] = isset(SHIELD_BAN_DIGEST[$in['ban_digest'] ?? '']) ? (string)$in['ban_digest'] : 'hourly';
+                $n['max_per_day'] = $int($in['max_per_day'] ?? 0, 0, 1000, 0);
                 $n['mail_from'] = filter_var(trim((string)($in['mail_from'] ?? '')), FILTER_VALIDATE_EMAIL) ?: '';
                 $n['transport'] = ($in['transport'] ?? '') === 'smtp' ? 'smtp' : 'mail';
                 $n['smtp'] = [

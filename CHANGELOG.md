@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 2.1.0
+
+Fewer emails, your choice how many (Settings → Notifications):
+
+* **Email on/off**: one switch stops all email alerts without deleting the address; Telegram and webhooks keep working.
+* **Banned-attackers digest**: every hour (as before), every 6 hours, once a day, or never. Bans are always visible in
+  Firewall either way.
+* **Daily limit** for non-critical alerts (bans, changed files, logins, audit, SSL, new version). The first alert over
+  the limit is replaced by a single "daily limit reached" notice. Site down, suspicious code, failed backups and
+  restores are always sent.
+
 ## 2.0.1
 
 * Fix: the security audit's probes (/.env, /.git, /phpinfo.php …) come from the server's own IP, so the firewall

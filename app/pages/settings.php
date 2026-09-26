@@ -131,6 +131,7 @@ $open = static fn(string $section) => '<form method="post" class="form">' . csrf
     $n = (array)$cfg['notify']; ?>
     <?= $open('notifications') ?>
     <section class="panel"><h2><?= e(__('Email')) ?></h2>
+        <?= field_check('email_enabled', __('Send email alerts'), !empty($n['email_enabled']), e(__('Off = no email at all; the address and the other channels stay as they are.'))) ?>
         <div class="row2">
             <?= field_text('email', __('Send alerts to'), $n['email'], e(__('Several addresses separated by commas.'))) ?>
             <?= field_text('mail_from', __('Sender address'), $n['mail_from'], e(__('Empty = shield@your-domain. Use an address of your own domain.'))) ?>
@@ -167,6 +168,12 @@ $open = static fn(string $section) => '<form method="post" class="form">' . csrf
     <section class="panel"><h2><?= e(__('What to send')) ?></h2>
         <div class="checks-grid">
         <?php foreach (SHIELD_EVENTS as $ev => $label): ?><?= field_check('ev_' . $ev, __($label), !empty($n['events'][$ev])) ?><?php endforeach; ?>
+        </div>
+        <div class="row2">
+            <?= field_select('ban_digest', __('Banned attackers digest'), $n['ban_digest'], [
+                'off' => __('Never'), 'hourly' => __('Every hour'), '6h' => __('Every 6 hours'), 'daily' => __('Once a day'),
+            ], e(__('Bans are always listed in Firewall; this is only how often they are emailed.'))) ?>
+            <?= field_text('max_per_day', __('Max alerts per day'), $n['max_per_day'], e(__('0 = no limit. Site down, suspicious code, failed backups and restores are always sent.')), ['type' => 'number', 'min' => 0, 'max' => 1000]) ?>
         </div>
     </section>
     <div class="toolbar"><button class="btn primary"><?= e(__('Save')) ?></button></div></form>

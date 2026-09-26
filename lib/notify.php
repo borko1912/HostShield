@@ -11,7 +11,7 @@ const SHIELD_EVENTS = [
     'malware' => 'Suspicious code found',
     'changes' => 'Files changed',
     'down' => 'Site down / back up',
-    'ban' => 'Attackers banned (hourly digest)',
+    'ban' => 'Attackers banned (digest)',
     'login' => 'Dashboard logins',
     'restore' => 'Restore finished',
     'audit' => 'New security audit problems',
@@ -19,12 +19,51 @@ const SHIELD_EVENTS = [
     'update' => 'New HostShield version',
 ];
 
+/** Always sent, even over the daily limit: missing one of these costs a site. */
+const SHIELD_CRITICAL_EVENTS = ['down', 'malware', 'backup_failed', 'restore', 'test'];
+
+/** How often the ban digest goes out: off | hourly | 6h | daily => seconds (0 = off). */
+const SHIELD_BAN_DIGEST = ['off' => 0, 'hourly' => 3600, '6h' => 21600, 'daily' => 86400];
+
+/**
+ * Daily cap for non-critical alerts. true = send; false = skip; 'capped' = the
+ * first alert over the cap, replaced by one "limit reached" notice.
+ */
+function shield_notify_quota(string $event, int $max): bool|string
+{
+    if ($max <= 0 || in_array($event, SHIELD_CRITICAL_EVENTS, true)) {
+        return true;
+    }
+    $file = shield_path('cache/notify-quota.json');
+    $q = shield_json_read($file);
+    if (($q['date'] ?? '') !== date('Y-m-d')) {
+        $q = ['date' => date('Y-m-d'), 'n' => 0, 'capped' => false];
+    }
+    $q['n'] = (int)$q['n'] + 1;
+    $result = true;
+    if ($q['n'] > $max) {
+        $result = empty($q['capped']) ? 'capped' : false;
+        $q['capped'] = true;
+    }
+    shield_json_write($file, $q);
+    return $result;
+}
+
 /** Sends an alert. Returns the list of channels that accepted it. */
 function shield_notify(string $event, string $subject, string $body): array
 {
     $n = (array)(shield_config()['notify'] ?? []);
     if (isset(SHIELD_EVENTS[$event]) && empty($n['events'][$event])) {
         return [];
+    }
+    $quota = shield_notify_quota($event, (int)($n['max_per_day'] ?? 0));
+    if ($quota === false) {
+        shield_log('notify', '[' . $event . '] ' . $subject . ' → skipped (daily limit)');
+        return [];
+    }
+    if ($quota === 'capped') {
+        $subject = __('Daily alert limit reached (%d)', (int)$n['max_per_day']);
+        $body = __("No more non-critical alerts will be sent today. Critical ones (site down, suspicious code, failed backup, restore) still go out.\nEverything is still in the dashboard log. Change the limit in Settings → Notifications.");
     }
     $sent = [];
     $channels = [
@@ -52,7 +91,7 @@ function shield_channel_configured(string $name): bool
 {
     $n = (array)(shield_config()['notify'] ?? []);
     return match ($name) {
-        'email' => trim((string)($n['email'] ?? '')) !== '',
+        'email' => trim((string)($n['email'] ?? '')) !== '' && !empty($n['email_enabled'] ?? true),
         'telegram' => trim((string)($n['telegram']['token'] ?? '')) !== '' && trim((string)($n['telegram']['chat_id'] ?? '')) !== '',
         'webhook' => trim((string)($n['webhook']['url'] ?? '')) !== '',
         default => false,

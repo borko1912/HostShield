@@ -193,9 +193,12 @@ foreach (shield_jobs_pending() as $job) {
     shield_job_run($job);
 }
 
-// 2) Firewall bans: one digest per hour.
+// 2) Firewall bans: one digest per hour / 6 hours / day, or none (Settings → Alerts).
 $alerts = shield_path('waf/alerts.jsonl');
-if (is_file($alerts) && filesize($alerts) > 0 && $due('last_ban_digest', 3600)) {
+$digestEvery = SHIELD_BAN_DIGEST[(string)($cfg['notify']['ban_digest'] ?? 'hourly')] ?? 3600;
+if ($digestEvery === 0 && is_file($alerts)) {
+    @unlink($alerts); // digest off: the bans are still in the firewall log, just not mailed
+} elseif (is_file($alerts) && filesize($alerts) > 0 && $due('last_ban_digest', $digestEvery)) {
     $proc = $alerts . '.sending';
     @rename($alerts, $proc);
     $lines = array_values(array_filter(array_map(static fn($l) => json_decode($l, true), (array)file($proc, FILE_IGNORE_NEW_LINES))));

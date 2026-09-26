@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-const SHIELD_VERSION = '2.0.1';
+const SHIELD_VERSION = '2.1.0';
 const SHIELD_REPO = 'borko1912/HostShield';
 const SHIELD_FUNDING = ['GitHub Sponsors' => 'https://github.com/sponsors/borko1912'];
 
@@ -85,6 +85,9 @@ function shield_defaults(): array
         ],
         'notify' => [
             'email' => '',
+            'email_enabled' => true,  // master switch for email alerts (keeps the address)
+            'ban_digest' => 'hourly', // off | hourly | 6h | daily
+            'max_per_day' => 0,       // cap for non-critical alerts, 0 = no limit
             'mail_from' => '',
             'transport' => 'mail', // mail | smtp
             'smtp' => ['host' => '', 'port' => 587, 'secure' => 'tls', 'user' => '', 'pass' => ''],
