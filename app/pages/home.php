@@ -113,6 +113,7 @@ $done = count(array_filter($steps, static fn($s) => $s[0]));
             <li><span><?= e(__('Uptime')) ?></span><b class="<?= empty($up['checked']) ? '' : ($upOk ? 'ok' : 'bad') ?>"><?= empty($up['checked']) ? '—' : ($upOk ? e(($pct !== null ? $pct . '% · ' : '') . (int)$up['ms'] . ' ms') : e(__('DOWN (%d)', (int)$up['code']))) ?></b></li>
             <li><span><?= e(__('Firewall')) ?></span><b class="<?= $hbAge !== null && $hbAge < 86400 ? 'ok' : 'bad' ?>"><?= $hbAge === null ? e(__('not enabled')) : e(__('active · %s', shield_ago(time() - $hbAge))) ?></b></li>
             <li><span><?= e(__('Backups')) ?></span><b class="<?= $b ? '' : 'warn' ?>"><?= count($b) ?><?= $b ? ' · ' . e(shield_ago((int)$b[0]['created'])) : '' ?></b></li>
+            <li><span><?= e(__('Databases')) ?></span><b class="<?= $b && !$b[0]['databases'] ? 'bad' : '' ?>"><?= !$b ? '—' : ($b[0]['databases'] ? e(implode(', ', array_column($b[0]['databases'], 'name'))) : e(__('NONE — files only'))) ?></b></li>
             <li><span><?= e(__('Files')) ?></span><b class="<?= $mal ? 'bad' : ($changes ? 'warn' : 'ok') ?>"><?= $mal ? e(__('%d suspicious!', $mal)) : ($changes ? e(__('%d changes', $changes)) : (empty($rep['checked']) ? '—' : e(__('clean')))) ?></b></li>
         </ul>
         <?= uptime_strip($up) ?>
@@ -123,6 +124,22 @@ $done = count(array_filter($steps, static fn($s) => $s[0]));
         <?php endif; ?>
     </a>
 <?php endforeach; ?>
+<?php if ($sites):
+    // "Other databases": everything the dashboard's database users can see that no site lists.
+    $xb = shield_list_backups(SHIELD_EXTRA_DB_KEY);
+    try { $visibleDbs = shield_visible_databases(); $extraDbs = array_keys(shield_unassigned_databases($visibleDbs)); } catch (Throwable $ex) { $visibleDbs = $extraDbs = []; }
+    ?>
+    <div class="card">
+        <div class="card-h"><div><b><?= e(__('Other databases')) ?></b><div class="muted"><?= e(__('%d databases visible · all are backed up', count($visibleDbs))) ?></div></div></div>
+        <ul class="kv">
+            <li><span><?= e(__('Databases')) ?></span><b><?= $extraDbs ? e(implode(', ', $extraDbs)) : e(__('none — every database belongs to a site')) ?></b></li>
+            <li><span><?= e(__('Backups')) ?></span><b><?= count($xb) ?><?= $xb ? ' · ' . e(shield_ago((int)$xb[0]['created'])) : '' ?></b></li>
+            <?php if ($xb): ?><li><span><?= e(__('Download')) ?></span><b><?php foreach ((array)$xb[0]['databases'] as $i => $d): ?><?= $i ? ' · ' : '' ?><a href="<?= e(url(['p' => 'download', 'site' => SHIELD_EXTRA_DB_KEY, 'backup' => $xb[0]['name'], 'file' => $d['file']])) ?>"><?= e($d['name']) ?></a><?php endforeach; ?></b></li><?php endif; ?>
+        </ul>
+        <?php if (!empty($state['backup_errors'][SHIELD_EXTRA_DB_KEY])): ?><div class="card-err"><?= e(__('Backup error: %s', (string)$state['backup_errors'][SHIELD_EXTRA_DB_KEY]['msg'])) ?></div><?php endif; ?>
+        <div class="muted" style="margin-top:8px"><?= e(__('A database missing here? Give the dashboard database user access to it in your hosting panel.')) ?></div>
+    </div>
+<?php endif; ?>
     <?php if ($sites): ?><a class="card add" href="<?= e(url(['p' => 'site_add'])) ?>"><span>+</span><?= e(__('Add site')) ?></a><?php endif; ?>
 </div>
 

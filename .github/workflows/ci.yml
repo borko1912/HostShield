@@ -11,6 +11,15 @@ jobs:
     strategy:
       matrix:
         php: ['8.1', '8.2', '8.3', '8.4']
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: hs-test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
     steps:
       - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
@@ -21,6 +30,8 @@ jobs:
       - name: Lint
         run: find . -name '*.php' -not -path './.git/*' -print0 | xargs -0 -n1 -P4 php -l > /dev/null
       - name: Unit tests
+        env:
+          SHIELD_TEST_DB: '127.0.0.1:3306:root:hs-test'
         run: php tests/run.php
 
   e2e:

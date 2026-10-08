@@ -149,14 +149,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
 // ================= Downloads =================
 if ($p === 'download') {
-    $k = site_key_param();
+    $k = ($_GET['site'] ?? '') === SHIELD_EXTRA_DB_KEY ? SHIELD_EXTRA_DB_KEY : site_key_param();
     $name = (string)($_GET['backup'] ?? '');
     $file = basename((string)($_GET['file'] ?? ''));
     foreach (shield_list_backups($k) as $m) {
         if ($m['name'] !== $name) {
             continue;
         }
-        $allowedFiles = array_merge([$m['files']['file']], array_column((array)$m['databases'], 'file'));
+        $allowedFiles = array_merge(empty($m['files']) ? [] : [$m['files']['file']], array_column((array)$m['databases'], 'file'));
         if (in_array($file, $allowedFiles, true) && is_file($m['dir'] . '/' . $file)) {
             shield_log('download', "{$k}/{$name}/{$file} by " . shield_client_ip());
             while (ob_get_level()) {

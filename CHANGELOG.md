@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 2.2.0
+
+Nothing the dashboard can see is left without a backup:
+
+* Every database visible to the dashboard's database user (or to a site's own user) that no site lists is dumped
+  every night under "Other databases" — same retention, checksum verification and off-site copy as the sites.
+* Overview: each site card shows which databases its last backup holds ("NONE — files only" in red), and an
+  "Other databases" card lists the extra ones with their last backup and download links.
+* `php cron/worker.php --backup _databases` backs them up on demand.
+
 ## 2.1.0
 
 Fewer emails, your choice how many (Settings → Notifications):

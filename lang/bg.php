@@ -749,4 +749,10 @@ Renew it in your hosting panel (AutoSSL / Let\'s Encrypt).' => 'Сертифик
   'Too many login attempts' => 'Твърде много опити за вход',
   'Too many requests' => 'Твърде много заявки',
   'IP on the block list' => 'IP в списъка за блокиране',
+  'Other databases' => 'Други бази',
+  '%d databases visible · all are backed up' => 'видими бази: %d · архивират се всички',
+  'none — every database belongs to a site' => 'няма — всички са към сайт',
+  'NONE — files only' => 'НЯМА — само файлове',
+  'A database missing here? Give the dashboard database user access to it in your hosting panel.' => 'Липсва база? Дай достъп до нея на DB потребителя на таблото от хостинг панела.',
+  'Download' => 'Изтегли',
 );

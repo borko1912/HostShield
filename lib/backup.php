@@ -394,6 +394,118 @@ function shield_backup_site(string $siteKey, string $kind = 'daily', ?callable $
     return $manifest;
 }
 
+/** Backup group for databases that belong to no site ("Other databases"). */
+const SHIELD_EXTRA_DB_KEY = '_databases';
+
+/**
+ * Every database the dashboard's credentials can see — the global database user and
+ * each site's own user — without the system schemas. Returns name => site array whose
+ * credentials see it ([] = the global user), so a dump uses a login that has access.
+ */
+function shield_visible_databases(): array
+{
+    $sources = [];
+    if (trim((string)(shield_config()['db']['user'] ?? '')) !== '') {
+        $sources[] = [];
+    }
+    foreach (array_keys(shield_sites()) as $k) {
+        $site = shield_site((string)$k);
+        if (!empty(array_filter((array)($site['db'] ?? []))['user'])) {
+            $sources[] = $site;
+        }
+    }
+    $out = [];
+    foreach ($sources as $src) {
+        try {
+            $db = shield_db_connect($src);
+            $res = $db->query('SHOW DATABASES');
+            while ($row = $res->fetch_row()) {
+                $n = (string)$row[0];
+                if (!isset($out[$n]) && !in_array(strtolower($n), ['information_schema', 'performance_schema', 'mysql', 'sys'], true)) {
+                    $out[$n] = $src;
+                }
+            }
+            $db->close();
+        } catch (Throwable $e) {
+            shield_log('backup', 'database list: ' . $e->getMessage());
+        }
+    }
+    ksort($out);
+    return $out;
+}
+
+/** Visible databases that no site lists (databases / db_patterns): name => site array to connect with. */
+function shield_unassigned_databases(?array $visible = null): array
+{
+    $visible ??= shield_visible_databases();
+    foreach (array_keys(shield_sites()) as $k) {
+        try {
+            foreach (shield_site_databases(shield_site((string)$k)) as $d) {
+                unset($visible[$d]);
+            }
+        } catch (Throwable $e) {
+            // a site with broken settings: its databases at least land here
+        }
+    }
+    return $visible;
+}
+
+/**
+ * Nightly dump of every database that belongs to no site, into backups/_databases/<date>_<kind>
+ * (same manifest, retention, verify and off-site copy as a site, without files.zip), so nothing
+ * the dashboard can see is left without a backup. null = there are no such databases.
+ */
+function shield_backup_extra_databases(string $kind = 'daily'): ?array
+{
+    $dbs = shield_unassigned_databases();
+    if (!$dbs) {
+        return null;
+    }
+    @set_time_limit(0);
+    $key = SHIELD_EXTRA_DB_KEY;
+    $started = microtime(true);
+    $name = date('Y-m-d_His') . '_' . $kind;
+    $final = shield_backup_root($key) . '/' . $name;
+    $work = $final . '.partial';
+    shield_rrmdir($work);
+    shield_dir('backups/' . $key . '/' . $name . '.partial');
+    $manifest = ['site' => $key, 'kind' => $kind, 'created' => time(), 'created_iso' => date('c'), 'files' => null, 'databases' => []];
+    try {
+        foreach ($dbs as $database => $src) {
+            $sqlFile = $work . '/db-' . preg_replace('/[^A-Za-z0-9_.-]/', '_', (string)$database) . '.sql.gz';
+            $stats = shield_dump_database($src, (string)$database, $sqlFile);
+            $manifest['databases'][] = $stats + ['name' => (string)$database, 'file' => basename($sqlFile), 'size' => filesize($sqlFile), 'sha256' => hash_file('sha256', $sqlFile)];
+        }
+        $manifest['duration'] = round(microtime(true) - $started, 1);
+        $manifest['total_size'] = array_sum(array_column($manifest['databases'], 'size'));
+        $manifest['status'] = 'ok';
+        shield_json_write($work . '/manifest.json', $manifest);
+        if (!@rename($work, $final)) {
+            throw new RuntimeException('Cannot finalize the backup');
+        }
+    } catch (Throwable $e) {
+        shield_rrmdir($work);
+        shield_log('backup', "ERROR {$key}: " . $e->getMessage());
+        throw $e;
+    }
+    shield_log('backup', "OK {$key}: " . count($dbs) . ' databases (' . implode(', ', array_keys($dbs)) . '), ' . shield_human_size($manifest['total_size']) . ", {$manifest['duration']} s");
+    $manifest['name'] = $name;
+    $manifest['dir'] = $final;
+    $manifest['pruned'] = shield_prune_backups($key);
+    if (shield_offsite_enabled()) {
+        try {
+            shield_offsite_upload($key, $name);
+            shield_offsite_prune($key);
+            $manifest['offsite'] = true;
+        } catch (Throwable $e) {
+            shield_log('offsite', 'ERROR ' . $key . ': ' . $e->getMessage());
+            shield_notify('backup_failed', __('Off-site copy failed: %s', __('Other databases')), $e->getMessage());
+            $manifest['offsite_error'] = $e->getMessage();
+        }
+    }
+    return $manifest;
+}
+
 /**
  * Grandfather-father-son retention.
  * $items: name => unix time. Keeps the newest $daily, plus the newest backup of each of the
@@ -475,7 +587,9 @@ function shield_verify_backup(array $m): array
             $problems[] = $file . ' ' . __('is corrupted (checksum)');
         }
     };
-    $check((string)$m['files']['file'], (string)$m['files']['sha256']);
+    if (!empty($m['files'])) { // "Other databases" have no files.zip
+        $check((string)$m['files']['file'], (string)$m['files']['sha256']);
+    }
     foreach ((array)$m['databases'] as $d) {
         $check((string)$d['file'], (string)$d['sha256']);
     }

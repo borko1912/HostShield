@@ -39,7 +39,7 @@ shield_migrate();
 $args = defined('SHIELD_WEB_CRON') ? [] : array_slice($argv ?? [], 1);
 $cmd = $args[0] ?? '';
 $only = $args[1] ?? null;
-if ($only !== null && $cmd !== '--restore' && !isset(shield_sites()[$only])) {
+if ($only !== null && $cmd !== '--restore' && $only !== SHIELD_EXTRA_DB_KEY && !isset(shield_sites()[$only])) {
     fwrite(STDERR, "Unknown site: {$only}. Sites: " . implode(', ', array_keys(shield_sites())) . "\n");
     exit(1);
 }
@@ -74,6 +74,18 @@ $runBackups = static function (?string $only): void {
                 $m['files']['count'], count($m['databases']), $m['duration'], !empty($m['offsite_error']) ? '  OFF-SITE FAILED' : '');
         } catch (Throwable $e) {
             $failed[$key] = $e->getMessage();
+        }
+    }
+    // Databases that belong to no site ("Other databases"): nightly, or when asked for by key.
+    if ($only === null || $only === SHIELD_EXTRA_DB_KEY) {
+        try {
+            $m = shield_backup_extra_databases($only !== null ? 'manual' : 'daily');
+            if ($m) {
+                $ok[SHIELD_EXTRA_DB_KEY] = sprintf('%-14s %s  %s  (%d databases: %s, %s s)%s', SHIELD_EXTRA_DB_KEY, $m['name'], shield_human_size((float)$m['total_size']),
+                    count($m['databases']), implode(', ', array_column($m['databases'], 'name')), $m['duration'], !empty($m['offsite_error']) ? '  OFF-SITE FAILED' : '');
+            }
+        } catch (Throwable $e) {
+            $failed[SHIELD_EXTRA_DB_KEY] = $e->getMessage();
         }
     }
     shield_state_update(static function (array $st) use ($ok, $failed): array {
