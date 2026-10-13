@@ -49,7 +49,12 @@ function post_button(string $action, string $label, array $fields = [], array $o
 
 function site_key_param(string $name = 'site'): string
 {
-    $k = (string)($_POST[$name] ?? $_GET[$name] ?? '');
+    // Site settings use nested fields such as site[title]. In PHP that makes
+    // $_POST['site'] an array, so never cast it to a key; fall back to the
+    // explicit query-string site identifier from the form action instead.
+    $posted = $_POST[$name] ?? null;
+    $query = $_GET[$name] ?? null;
+    $k = is_scalar($posted) ? (string)$posted : (is_scalar($query) ? (string)$query : '');
     if (!isset(shield_sites()[$k])) {
         http_response_code(404);
         exit(e(__('Unknown site')));
