@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* Fix site settings saves by posting to the explicit site URL, preserving the site key for backup/database changes.
+
 ## 2.2.0
 
 Nothing the dashboard can see is left without a backup:

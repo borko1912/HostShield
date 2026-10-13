@@ -274,7 +274,7 @@ $hidden = static fn(array $f = []) => csrf_field() . '<input type="hidden" name=
 <?php elseif ($tab === 'settings'):
     $f = static fn(string $n) => 'site[' . $n . ']';
     ?>
-    <form method="post" class="form">
+    <form method="post" action="<?= e(url(['p' => 'site', 'site' => $k, 'tab' => 'settings'])) ?>" class="form">
         <?= $hidden() ?><input type="hidden" name="action" value="site_save">
         <section class="panel"><h2><?= e(__('General')) ?></h2>
             <div class="row2">
