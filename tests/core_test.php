@@ -94,6 +94,23 @@ test('detect: WordPress, Laravel and Joomla credentials', function (): void {
     eq('static', shield_detect_platform($root . '/plain'));
     eq([], shield_detect_db($root . '/plain', 'static'));
 
+    // plain PHP apps: the usual config files, values as literal strings only
+    $php = static function (string $dir, string $file, string $code) use ($root): array {
+        @mkdir(dirname($root . '/' . $dir . '/' . $file), 0777, true);
+        file_put_contents($root . '/' . $dir . '/' . $file, $code);
+        return shield_detect_db($root . '/' . $dir, 'php');
+    };
+    eq(['host' => 'localhost', 'port' => 3306, 'user' => 'a_user', 'pass' => 'a_pass', 'name' => 'a_db'],
+        $php('arr', 'config.local.php', "<?php\nreturn ['db_host' => 'localhost', 'db_user' => 'a_user', 'db_pass' => 'a_pass', 'db_name' => 'a_db'];"), 'config.local.php array');
+    eq(['host' => 'localhost', 'port' => 3306, 'user' => 'p_user', 'pass' => 'p#ss', 'name' => 'p_db'],
+        $php('pdo', 'config/db.php', "<?php\n\$pdo = new PDO('mysql:host=localhost;dbname=p_db;charset=utf8mb4', 'p_user', 'p#ss', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);"), 'PDO literal');
+    eq(['host' => '127.0.0.1', 'port' => 3307, 'user' => 'd_user', 'pass' => 'd_pass', 'name' => 'd_db'],
+        $php('def', 'config.php', "<?php\ndefine('DB_HOST', '127.0.0.1:3307');\ndefine('DB_USER', 'd_user');\ndefine('DB_PASSWORD', 'd_pass');\ndefine('DB_NAME', 'd_db');"), 'define()');
+    eq('v_db', $php('vars', 'includes/config.php', "<?php\n\$db_host = 'localhost';\n\$db_user = 'v_user';\n\$db_pass = 'v_pass';\n\$db_name = 'v_db';")['name'] ?? null, 'variables');
+    eq(['host' => 'localhost', 'port' => 3306, 'user' => 'm_user', 'pass' => 'm_pass', 'name' => 'm_db'],
+        $php('mysqli', 'db_connect.php', "<?php\n\$conn = new mysqli('localhost', 'm_user', 'm_pass', 'm_db');"), 'mysqli literal');
+    eq([], $php('env', 'db_connect.php', "<?php\n\$conn = new mysqli(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_NAME'));"), 'runtime values are not guessed');
+
     eq('example-com', shield_site_key('www.example.com', []));
     eq('example-com-2', shield_site_key('example.com', ['example-com' => []]));
 });

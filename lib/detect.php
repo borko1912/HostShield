@@ -138,6 +138,9 @@ function shield_detect_db(string $path, string $platform): array
                     break;
                 }
             }
+            if (empty($out['name'])) {
+                $out = shield_detect_db_php($p, $read);
+            }
     }
     if (empty($out['name']) || empty($out['user'])) {
         return [];
@@ -148,6 +151,79 @@ function shield_detect_db(string $path, string $platform): array
         [$host, $port] = [$m[1], (int)$m[2]];
     }
     return ['host' => $host, 'port' => $port ?: 3306, 'user' => (string)$out['user'], 'pass' => (string)($out['pass'] ?? ''), 'name' => (string)$out['name']];
+}
+
+/**
+ * Plain PHP apps: the usual config files, read as text (never executed). Recognizes
+ *   return ['db_host' => '…', 'db_user' => '…', 'db_pass' => '…', 'db_name' => '…']  (and host/user/password/dbname … keys)
+ *   define('DB_NAME', '…') / DB_USER / DB_PASS(WORD) / DB_HOST
+ *   $db_name = '…'; $dbUser = '…'; …
+ *   new PDO('mysql:host=…;dbname=…', '…', '…') and new mysqli('…', '…', '…', '…') with literal arguments.
+ * Only literal strings count; values computed at runtime (getenv(), concatenation) are skipped.
+ */
+function shield_detect_db_php(string $p, callable $read): array
+{
+    $files = ['config.local.php', 'config/db.php', 'config/database.php', 'config/config.php', 'config.php', 'includes/config.php',
+        'inc/config.php', 'db_connect.php', 'db.php', 'includes/db.php', 'connect.php', 'includes/db_connect.php'];
+    $str = '(?:\'((?:[^\'\\\\]|\\\\.)*)\'|"((?:[^"\\\\$]|\\\\.)*)")';
+    $val = static fn(array $m, int $i): string => stripcslashes(($m[$i] ?? '') !== '' ? $m[$i] : ($m[$i + 1] ?? ''));
+    $first = static function (string $src, array $patterns) use ($val): ?string {
+        foreach ($patterns as $re) {
+            if (preg_match($re, $src, $m)) {
+                $v = $val($m, 1);
+                if ($v !== '') {
+                    return $v;
+                }
+            }
+        }
+        return null;
+    };
+    $names = [
+        'name' => ['db_name', 'dbname', 'db_database', 'database', 'db'],
+        'user' => ['db_user', 'dbuser', 'db_username', 'username', 'user'],
+        'pass' => ['db_pass', 'dbpass', 'db_password', 'dbpassword', 'password', 'pass'],
+        'host' => ['db_host', 'dbhost', 'db_server', 'hostname', 'host', 'server'],
+    ];
+    $consts = ['name' => ['DB_NAME', 'DB_DATABASE'], 'user' => ['DB_USER', 'DB_USERNAME'], 'pass' => ['DB_PASSWORD', 'DB_PASS'], 'host' => ['DB_HOST', 'DB_SERVER']];
+    foreach ($files as $f) {
+        $src = $read($p . '/' . $f);
+        if ($src === '' || !str_contains($src, '<?')) {
+            continue;
+        }
+        $out = [];
+        // new PDO('mysql:host=…;dbname=…', 'user', 'pass')
+        if (preg_match('/new\s+\\\\?PDO\s*\(\s*' . $str . '\s*,\s*' . $str . '\s*(?:,\s*' . $str . ')?/i', $src, $m)) {
+            $dsn = $val($m, 1);
+            if (preg_match('/^mysql:(.*)$/i', $dsn, $d)) {
+                parse_str(str_replace(';', '&', $d[1]), $kv);
+                $out = ['name' => $kv['dbname'] ?? null, 'host' => $kv['host'] ?? null, 'port' => $kv['port'] ?? null, 'user' => $val($m, 3), 'pass' => isset($m[5]) ? $val($m, 5) : ''];
+            }
+        }
+        // new mysqli('host', 'user', 'pass', 'db') / mysqli_connect(...)
+        if (empty($out['name']) && preg_match('/(?:new\s+\\\\?mysqli|mysqli_connect)\s*\(\s*' . $str . '\s*,\s*' . $str . '\s*,\s*' . $str . '\s*,\s*' . $str . '/i', $src, $m)) {
+            $out = ['host' => $val($m, 1), 'user' => $val($m, 3), 'pass' => $val($m, 5), 'name' => $val($m, 7)];
+        }
+        if (empty($out['name'])) {
+            foreach ($names as $k => $keys) {
+                $pat = [];
+                foreach ($consts[$k] as $c) {
+                    $pat[] = '/define\s*\(\s*[\'"]' . $c . '[\'"]\s*,\s*' . $str . '/';
+                }
+                foreach ($keys as $key) {
+                    $pat[] = '/[\'"]' . $key . '[\'"]\s*=>\s*' . $str . '/i';
+                }
+                foreach ($keys as $key) {
+                    $camel = str_replace('_', '', $key);
+                    $pat[] = '/\$(?:' . preg_quote($key, '/') . '|' . preg_quote($camel, '/') . ')\s*=\s*' . $str . '\s*;/i';
+                }
+                $out[$k] = $first($src, $pat);
+            }
+        }
+        if (!empty($out['name']) && !empty($out['user'])) {
+            return $out;
+        }
+    }
+    return [];
 }
 
 function shield_parse_env(string $src): array
