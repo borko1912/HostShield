@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.2.1
 
 * Fix site settings saves by posting to the explicit site URL, preserving the site key for backup/database changes.
 * Fix nested site settings POST data being mistaken for an invalid site key.

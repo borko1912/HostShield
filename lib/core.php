@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-const SHIELD_VERSION = '2.2.0';
+const SHIELD_VERSION = '2.2.1';
 const SHIELD_REPO = 'borko1912/HostShield';
 const SHIELD_FUNDING = ['GitHub Sponsors' => 'https://github.com/sponsors/borko1912'];
 
