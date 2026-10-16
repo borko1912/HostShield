@@ -4,6 +4,8 @@
 
 * Fix site settings saves by posting to the explicit site URL, preserving the site key for backup/database changes.
 * Fix nested site settings POST data being mistaken for an invalid site key.
+* Off-site S3: the endpoint may be typed without `https://` (it is added). Hosting firewalls (ModSecurity) answered
+  403 to saving the backup settings when the field held `https://` plus another domain.
 * "Detect database from app config" also reads plain PHP apps: `config.local.php`, `config/db.php`, `config.php`,
   `db_connect.php` … (return arrays, `define()`, `$db_*` variables, literal `new PDO()` / `new mysqli()`).
 

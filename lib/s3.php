@@ -1,6 +1,20 @@
 <?php
 declare(strict_types=1);
 
+/**
+ * The endpoint as typed: a bare host ("s3.example.com" or "s3.example.com:9000") gets https://.
+ * Some hosting firewalls (ModSecurity) answer 403 to a form field holding "https://" plus another
+ * domain, so the settings page also accepts the endpoint without it.
+ */
+function shield_s3_endpoint(string $v): string
+{
+    $v = trim($v);
+    if ($v !== '' && !preg_match('#^[a-z][a-z0-9+.-]*://#i', $v)) {
+        $v = 'https://' . ltrim($v, '/');
+    }
+    return $v;
+}
+
 require_once __DIR__ . '/core.php';
 
 // S3-compatible storage client (AWS S3, Backblaze B2, Cloudflare R2, Wasabi, MinIO...).
