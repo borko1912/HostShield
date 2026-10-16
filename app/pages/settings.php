@@ -99,7 +99,7 @@ $open = static fn(string $section) => '<form method="post" class="form">' . csrf
         <p class="muted"><?= e(__('A copy outside this server survives a server failure, a hacked hosting account or a mistake. Recommended: Backblaze B2 or Cloudflare R2 (both have free tiers).')) ?></p>
         <?= field_select('offsite_type', __('Storage'), $o['type'], ['none' => __('None'), 's3' => __('S3-compatible (AWS, Backblaze B2, Cloudflare R2, Wasabi, MinIO)'), 'ftp' => __('FTP / FTPS')]) ?>
         <div data-when="s3">
-            <?= field_text('s3_endpoint', __('Endpoint'), $o['s3']['endpoint'], e(__('e.g. https://s3.eu-central-003.backblazeb2.com, https://<account>.r2.cloudflarestorage.com, https://s3.eu-west-1.amazonaws.com'))) ?>
+            <?= field_text('s3_endpoint', __('Endpoint'), $o['s3']['endpoint'], e(__('e.g. s3.eu-central-003.backblazeb2.com, <account>.r2.cloudflarestorage.com, s3.eu-west-1.amazonaws.com (https:// is added; type http:// only for a server without TLS)'))) ?>
             <div class="row3">
                 <?= field_text('s3_bucket', __('Bucket'), $o['s3']['bucket']) ?>
                 <?= field_text('s3_region', __('Region'), $o['s3']['region'], e(__('auto for R2; e.g. eu-central-003 for B2'))) ?>

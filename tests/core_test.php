@@ -25,6 +25,14 @@ test('sigv4: AWS documentation examples', function (): void {
     ok(str_ends_with($auth, 'Signature=34b48302e7b5fa45bde8084f4b7868a86f0a534bc59db6670ed5711ef69dc6f7'), 'List objects: ' . $auth);
 });
 
+test('s3 endpoint: a bare host gets https://, a typed scheme stays', function (): void {
+    eq('https://s3.navipro.synology.me', shield_s3_endpoint(' s3.navipro.synology.me '));
+    eq('https://minio.local:9000', shield_s3_endpoint('minio.local:9000'));
+    eq('https://s3.eu-west-1.amazonaws.com', shield_s3_endpoint('https://s3.eu-west-1.amazonaws.com'));
+    eq('http://10.0.0.5:9000', shield_s3_endpoint('http://10.0.0.5:9000'));
+    eq('', shield_s3_endpoint('  '));
+});
+
 test('retention: grandfather-father-son', function (): void {
     $items = [];
     $start = strtotime('2026-01-01 03:00:00');

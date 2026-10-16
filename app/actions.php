@@ -388,7 +388,7 @@ switch ($a) {
                     'dir' => '/' . trim((string)($in['ftp_dir'] ?? 'shield-backups'), '/'), 'ssl' => !empty($in['ftp_ssl']),
                 ];
                 $o['s3'] = [
-                    'endpoint' => trim((string)($in['s3_endpoint'] ?? '')), 'region' => trim((string)($in['s3_region'] ?? '')) ?: 'auto',
+                    'endpoint' => shield_s3_endpoint((string)($in['s3_endpoint'] ?? '')), 'region' => trim((string)($in['s3_region'] ?? '')) ?: 'auto',
                     'bucket' => trim((string)($in['s3_bucket'] ?? '')), 'key' => trim((string)($in['s3_key'] ?? '')),
                     'secret' => $secret($in['s3_secret'] ?? '', $o['s3']['secret'] ?? ''),
                     'prefix' => trim((string)($in['s3_prefix'] ?? ''), '/') . '/', 'path_style' => !empty($in['s3_path_style']),

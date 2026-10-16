@@ -276,7 +276,7 @@ return array (
   'S3-compatible (AWS, Backblaze B2, Cloudflare R2, Wasabi, MinIO)' => 'S3-съвместимо (AWS, Backblaze B2, Cloudflare R2, Wasabi, MinIO)',
   'FTP / FTPS' => 'FTP / FTPS',
   'Endpoint' => 'Endpoint',
-  'e.g. https://s3.eu-central-003.backblazeb2.com, https://<account>.r2.cloudflarestorage.com, https://s3.eu-west-1.amazonaws.com' => 'напр. https://s3.eu-central-003.backblazeb2.com, https://<account>.r2.cloudflarestorage.com, https://s3.eu-west-1.amazonaws.com',
+  'e.g. s3.eu-central-003.backblazeb2.com, <account>.r2.cloudflarestorage.com, s3.eu-west-1.amazonaws.com (https:// is added; type http:// only for a server without TLS)' => 'напр. s3.eu-central-003.backblazeb2.com, <account>.r2.cloudflarestorage.com, s3.eu-west-1.amazonaws.com (https:// се добавя сам; напиши http:// само за сървър без TLS)',
   'Bucket' => 'Bucket',
   'Region' => 'Регион',
   'auto for R2; e.g. eu-central-003 for B2' => 'auto за R2; напр. eu-central-003 за B2',
